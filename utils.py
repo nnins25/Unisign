@@ -465,6 +465,27 @@ def get_args_parser():
     parser.add_argument('--local_rank', default=0, type=int)
     parser.add_argument('--local-rank', default=0, type=int)
     parser.add_argument("--hidden_dim", default=256, type=int)
+    # mT5 초기화 방식.
+    # auto: AIHub_KSL은 작은 랜덤 mT5, 기존 데이터셋은 pretrained mT5를 사용한다.
+    # tiny_random: pretrained_weight/mt5-base의 tokenizer만 쓰고 모델 가중치는 처음부터 학습한다.
+    # pretrained: 기존 Uni-Sign처럼 pretrained_weight/mt5-base 모델 가중치를 로드한다.
+    parser.add_argument("--mt5_init", default="auto",
+                        choices=["auto", "pretrained", "tiny_random"],
+                        help="mT5 initialization mode.")
+    parser.add_argument("--mt5_d_model", default=256, type=int,
+                        help="Hidden size for tiny random mT5.")
+    parser.add_argument("--mt5_d_kv", default=64, type=int,
+                        help="Key/value size per attention head for tiny random mT5.")
+    parser.add_argument("--mt5_d_ff", default=512, type=int,
+                        help="Feed-forward size for tiny random mT5.")
+    parser.add_argument("--mt5_num_layers", default=2, type=int,
+                        help="Encoder layer count for tiny random mT5.")
+    parser.add_argument("--mt5_num_decoder_layers", default=2, type=int,
+                        help="Decoder layer count for tiny random mT5.")
+    parser.add_argument("--mt5_num_heads", default=4, type=int,
+                        help="Attention head count for tiny random mT5.")
+    parser.add_argument("--mt5_dropout", default=0.1, type=float,
+                        help="Dropout rate for tiny random mT5.")
 
     # * Finetuning params
     parser.add_argument('--finetune', default='', help='finetune from checkpoint')

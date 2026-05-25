@@ -7,12 +7,13 @@
 #       필요하면 best_checkpoint.pth를 --finetune에 지정한다.
 # RGB 영상은 사용하지 않으므로 --rgb_support를 넣지 않는다.
 # DeepSpeed는 사용하지 않으므로 --enable_deepspeed를 넣지 않는다.
+# tiny random mT5로 학습한 checkpoint는 평가할 때도 같은 mT5 크기 옵션이 필요하다.
 #
 # Linux/Git Bash 실행:
 # bash script/eval_aihub_ksl_cslr_pose_only.sh
 #
 # Windows PowerShell 직접 실행:
-# python fine_tuning.py --dataset AIHub_KSL --task CSLR --batch-size 1 --eval --max_length 256 --output_dir out/aihub_ksl_cslr_pose_only --finetune out/aihub_ksl_cslr_pose_only/checkpoint_0.pth
+# python fine_tuning.py --dataset AIHub_KSL --task CSLR --batch-size 1 --eval --max_length 256 --mt5_init tiny_random --mt5_d_model 256 --mt5_d_ff 512 --mt5_num_layers 2 --mt5_num_decoder_layers 2 --mt5_num_heads 4 --output_dir out/aihub_ksl_cslr_pose_only --finetune out/aihub_ksl_cslr_pose_only/checkpoint_0.pth
 #
 # smoke/mini 결과를 평가하려면 --finetune 경로를 예를 들어 다음처럼 바꾼다.
 # --finetune out/aihub_ksl_smoke100/checkpoint_0.pth
@@ -24,5 +25,11 @@ python fine_tuning.py \
   --batch-size 1 \
   --eval \
   --max_length 256 \
+  --mt5_init tiny_random \
+  --mt5_d_model 256 \
+  --mt5_d_ff 512 \
+  --mt5_num_layers 2 \
+  --mt5_num_decoder_layers 2 \
+  --mt5_num_heads 4 \
   --output_dir out/aihub_ksl_cslr_pose_only \
   --finetune out/aihub_ksl_cslr_pose_only/checkpoint_0.pth

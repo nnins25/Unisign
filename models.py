@@ -9,7 +9,7 @@ from einops import rearrange
 import math
 from stgcn_layers import Graph, get_stgcn_chain
 from deformable_attention_2d import DeformableAttention2D
-from transformers import MT5ForConditionalGeneration, T5Tokenizer 
+from transformers import MT5Config, MT5ForConditionalGeneration, T5Tokenizer 
 import warnings
 from config import mt5_path
 
@@ -97,7 +97,6 @@ class Uni_Sign(nn.Module):
         self.proj_linear['left'] = self.proj_linear['right']
 
         self.part_para = nn.Parameter(torch.zeros(hidden_dim*len(self.modes)))
-        self.pose_proj = nn.Linear(256*4, 768)
         
         self.apply(self._init_weights)
         
@@ -138,8 +137,33 @@ class Uni_Sign(nn.Module):
                     nn.init.constant_(layer.weight, 0)
                     nn.init.constant_(layer.bias, 0)
 
-        self.mt5_model = MT5ForConditionalGeneration.from_pretrained(mt5_path)
         self.mt5_tokenizer = T5Tokenizer.from_pretrained(mt5_path, legacy=False)
+        mt5_init = self.args.mt5_init
+        if mt5_init == "auto":
+            mt5_init = "tiny_random" if self.args.dataset == "AIHub_KSL" else "pretrained"
+
+        if mt5_init == "tiny_random":
+            print("Initialize tiny random mT5. Pretrained mT5 weights are not loaded.")
+            mt5_config = MT5Config(
+                vocab_size=len(self.mt5_tokenizer),
+                d_model=self.args.mt5_d_model,
+                d_kv=self.args.mt5_d_kv,
+                d_ff=self.args.mt5_d_ff,
+                num_layers=self.args.mt5_num_layers,
+                num_decoder_layers=self.args.mt5_num_decoder_layers,
+                num_heads=self.args.mt5_num_heads,
+                dropout_rate=self.args.mt5_dropout,
+                pad_token_id=self.mt5_tokenizer.pad_token_id,
+                eos_token_id=self.mt5_tokenizer.eos_token_id,
+                decoder_start_token_id=self.mt5_tokenizer.pad_token_id,
+            )
+            self.mt5_model = MT5ForConditionalGeneration(mt5_config)
+        elif mt5_init == "pretrained":
+            self.mt5_model = MT5ForConditionalGeneration.from_pretrained(mt5_path)
+        else:
+            raise ValueError(f"Unknown mt5_init: {self.args.mt5_init}")
+
+        self.pose_proj = nn.Linear(256*4, self.mt5_model.config.d_model)
     
         
     def _init_weights(self, m):
