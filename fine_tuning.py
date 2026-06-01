@@ -75,6 +75,52 @@ def main(args):
         if param.requires_grad:
             param.data = param.data.to(torch.float32)
 
+    # ST-GCN 사전학습 가중치 로드 (전이학습용).
+    # 다른 데이터셋(예: CSL-News)에서 학습한 체크포인트에서 ST-GCN 부분만 가져온다.
+    if args.stgcn_pretrained != '':
+        print('***********************************')
+        print(f'Load ST-GCN pretrained weights from: {args.stgcn_pretrained}')
+        print('***********************************')
+        ckpt = torch.load(args.stgcn_pretrained, map_location='cpu')
+        src_state = ckpt['model'] if isinstance(ckpt, dict) and 'model' in ckpt else ckpt
+        # DDP 접두어 정리
+        src_state = {k.replace('module.', '', 1) if k.startswith('module.') else k: v
+                     for k, v in src_state.items()}
+
+        stgcn_prefixes = ('proj_linear.', 'gcn_modules.', 'fusion_gcn_modules.', 'part_para')
+        own_state = model.state_dict()
+        filtered, shape_mismatch, not_in_model = {}, [], []
+        for k, v in src_state.items():
+            if not k.startswith(stgcn_prefixes):
+                continue
+            if k not in own_state:
+                not_in_model.append(k)
+                continue
+            if own_state[k].shape != v.shape:
+                shape_mismatch.append(f"{k}: ckpt={tuple(v.shape)} vs model={tuple(own_state[k].shape)}")
+                continue
+            filtered[k] = v
+
+        ret = model.load_state_dict(filtered, strict=False)
+        loaded_stgcn = [k for k in filtered.keys()]
+        print(f'  Loaded {len(loaded_stgcn)} ST-GCN params from checkpoint.')
+        if shape_mismatch:
+            print('  [WARN] Shape mismatch (skipped):')
+            for s in shape_mismatch:
+                print(f'    {s}')
+        if not_in_model:
+            print(f'  [WARN] {len(not_in_model)} ckpt keys not in current model (skipped).')
+        # missing_keys 는 의도적으로 안 채운 mt5_model / pose_proj 가 대부분이라 출력 생략.
+
+        if args.freeze_stgcn:
+            print('  Freezing ST-GCN modules (requires_grad=False)')
+            frozen = 0
+            for name, param in model.named_parameters():
+                if name.startswith(stgcn_prefixes):
+                    param.requires_grad = False
+                    frozen += 1
+            print(f'  Frozen {frozen} ST-GCN params.')
+
     if args.finetune != '':
         print('***********************************')
         print('Load Checkpoint...')

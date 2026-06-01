@@ -465,6 +465,14 @@ def get_args_parser():
     parser.add_argument('--local_rank', default=0, type=int)
     parser.add_argument('--local-rank', default=0, type=int)
     parser.add_argument("--hidden_dim", default=256, type=int)
+    # ST-GCN 부분만 사전학습 가중치로 초기화하는 옵션.
+    # 예: --stgcn_pretrained ./pretrained_weight/csl_stage1_weight.pth
+    # 체크포인트 안의 proj_linear, gcn_modules, fusion_gcn_modules, part_para 만 로드한다.
+    # mt5_model / pose_proj 는 차원이 다를 수 있어 자동으로 건너뛴다.
+    parser.add_argument("--stgcn_pretrained", default="", type=str,
+                        help="Path to a checkpoint to initialize ST-GCN modules only (transfer learning).")
+    parser.add_argument("--freeze_stgcn", action="store_true",
+                        help="Freeze ST-GCN modules after loading pretrained weights (no gradient updates).")
     # mT5 초기화 방식.
     # auto: AIHub_KSL은 작은 랜덤 mT5, 기존 데이터셋은 pretrained mT5를 사용한다.
     # tiny_random: pretrained_weight/mt5-base의 tokenizer만 쓰고 모델 가중치는 처음부터 학습한다.
