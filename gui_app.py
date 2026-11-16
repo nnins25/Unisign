@@ -27,11 +27,11 @@ from PySide6.QtWidgets import (
 
 try:
     import mediapipe as mp
-except Exception:
+except ImportError:
     mp = None
 
 
-MODEL_PATH = r"out\aihub_ksl_cslr_pose_only_tiny_eval\checkpoint_174.pth"
+MODEL_PATH = ""
 CAMERA_BACKENDS = (
     cv2.CAP_ANY,
     cv2.CAP_MSMF,
@@ -65,7 +65,7 @@ class GestureTranslator:
 
         # TODO: Replace this block with real model inference.
         # Expected return: Prediction(label="...", confidence=0.0~1.0, translation="...")
-        return Prediction(label="model_ready", confidence=0.0, translation=f"연결된 checkpoint: {self.model_path}")
+        return Prediction(label="model_ready", confidence=0.0, translation="모델 연결 대기")
 
 
 class VideoLabel(QLabel):
@@ -136,7 +136,7 @@ class CameraWorker(QObject):
                     refine_face_landmarks=True,
                     min_detection_confidence=0.5,
                     min_tracking_confidence=0.5,
-                )c
+                )
 
         self.running = True
         last_time = time.perf_counter()
